@@ -1,7 +1,9 @@
 import 'fake-indexeddb/auto';
+import '@testing-library/jest-dom';
 
 // Mock crypto.randomUUID for Node.js environment
-if (!(globalThis as any).crypto?.randomUUID) {
+const global = globalThis as { crypto?: { randomUUID?: () => string } };
+if (!global.crypto?.randomUUID) {
   Object.defineProperty(globalThis, 'crypto', {
     value: {
       randomUUID: () => {
