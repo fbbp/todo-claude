@@ -80,7 +80,7 @@ export function HomePage() {
           {/* カテゴリーフィルター */}
           <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-2">
             <CategoryBadge
-              category={{ id: null, name: 'すべて', color: '#6366F1', order: 0 }}
+              category={{ name: 'すべて', color: '#6366F1', order: 0 }}
               selected={selectedCategory === null}
               onClick={() => setSelectedCategory(null)}
             />
