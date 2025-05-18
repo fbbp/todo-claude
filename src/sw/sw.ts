@@ -14,7 +14,7 @@ precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
 // Navigation route
-const navigationRoute = new NavigationRoute(createHandlerBoundToURL('./index.html'));
+const navigationRoute = new NavigationRoute(createHandlerBoundToURL('/todo-claude/index.html'));
 registerRoute(navigationRoute);
 
 // Cache static assets
@@ -79,8 +79,8 @@ function scheduleNotification(payload: NotificationPayload) {
   const timeout = setTimeout(() => {
     (self.registration as ExtendedServiceWorkerRegistration).showNotification(title, {
       body: '期限です',
-      icon: './icon.svg',
-      badge: './icon.svg',
+      icon: '/todo-claude/icon.svg',
+      badge: '/todo-claude/icon.svg',
       tag: taskId,
       requireInteraction: true,
       actions: [
