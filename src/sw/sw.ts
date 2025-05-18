@@ -14,7 +14,7 @@ precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
 // Navigation route
-const navigationRoute = new NavigationRoute(createHandlerBoundToURL('/index.html'));
+const navigationRoute = new NavigationRoute(createHandlerBoundToURL('./index.html'));
 registerRoute(navigationRoute);
 
 // Cache static assets
@@ -36,7 +36,7 @@ registerRoute(
 
 // Handle API-like requests
 registerRoute(
-  ({ url }) => url.pathname.startsWith('/api/'),
+  ({ url }) => url.pathname.includes('/api/'),
   new NetworkFirst({
     cacheName: 'api-cache',
     plugins: [
@@ -79,8 +79,8 @@ function scheduleNotification(payload: NotificationPayload) {
   const timeout = setTimeout(() => {
     (self.registration as ExtendedServiceWorkerRegistration).showNotification(title, {
       body: '期限です',
-      icon: '/icon.svg',
-      badge: '/icon.svg',
+      icon: './icon.svg',
+      badge: './icon.svg',
       tag: taskId,
       requireInteraction: true,
       actions: [
