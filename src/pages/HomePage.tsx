@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Bell } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { TaskCard } from '@/components/TaskCard';
 import { TaskForm } from '@/components/TaskForm';
@@ -9,10 +9,14 @@ import { Button } from '@/components/ui/button';
 import { useTasks } from '../store/useTasks';
 import { useCategories } from '../store/useCategories';
 import type { Task } from '../db';
+import { useNotifications } from '../hooks/useNotifications';
+import { useServiceWorker } from '../hooks/useServiceWorker';
 
 export function HomePage() {
   const { tasks, loading, load, add, update, remove, toggleStatus } = useTasks();
   const { categories, load: loadCategories } = useCategories();
+  const { permission, requestPermission, scheduleNotification, cancelNotification } = useNotifications();
+  const { isOffline, showReload, reloadPage } = useServiceWorker();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [taskFormOpen, setTaskFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>();
@@ -44,20 +48,31 @@ export function HomePage() {
   });
   
   const handleAddTask = async (taskData: Partial<Task>) => {
-    await add({
+    const taskId = await add({
       ...taskData,
       categoryId: selectedCategory || undefined,
     });
+    if (taskId && taskData.dueAt) {
+      const newTask = { ...taskData, id: taskId } as Task;
+      scheduleNotification(newTask);
+    }
   };
   
   const handleEditTask = async (taskData: Partial<Task>) => {
     if (editingTask?.id) {
       await update(editingTask.id, taskData);
+      if (taskData.dueAt) {
+        const updatedTask = { ...editingTask, ...taskData } as Task;
+        scheduleNotification(updatedTask);
+      } else {
+        cancelNotification(editingTask.id);
+      }
     }
   };
   
   const handleDeleteTask = async (id: string) => {
     await remove(id);
+    cancelNotification(id);
   };
   
   const openTaskForm = (task?: Task) => {
@@ -77,6 +92,42 @@ export function HomePage() {
       
       <div className="flex-1 overflow-y-auto">
         <div className="container mx-auto max-w-6xl p-4">
+          {/* オフライン表示と通知設定 */}
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {isOffline && (
+                <div className="rounded-md bg-yellow-50 px-3 py-1 text-sm text-yellow-800">
+                  オフライン
+                </div>
+              )}
+              {showReload && (
+                <Button variant="outline" size="sm" onClick={reloadPage}>
+                  アップデートを適用
+                </Button>
+              )}
+            </div>
+
+            {permission !== 'granted' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  const result = await requestPermission();
+                  if (result === 'granted') {
+                    // Schedule notifications for existing tasks
+                    tasks.forEach(task => {
+                      if (task.dueAt) {
+                        scheduleNotification(task);
+                      }
+                    });
+                  }
+                }}
+              >
+                <Bell className="h-4 w-4 mr-1" />
+                通知を有効にする
+              </Button>
+            )}
+          </div>
           {/* カテゴリーフィルター */}
           <div className="mb-6 flex items-center gap-2 overflow-x-auto pb-2">
             <CategoryBadge

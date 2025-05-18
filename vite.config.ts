@@ -18,8 +18,14 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src/sw',
+      filename: 'sw.ts',
       registerType: 'prompt',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff2}'],
+      },
+      includeAssets: ['favicon.ico', 'icon.svg'],
       manifest: {
         name: 'Todo Claude',
         short_name: 'Todo',
@@ -29,14 +35,16 @@ export default defineConfig({
         display: 'standalone',
         icons: [
           {
-            src: 'icon-192x192.png',
+            src: '/icon.svg',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/svg+xml',
+            purpose: 'any maskable',
           },
           {
-            src: 'icon-512x512.png',
+            src: '/icon.svg',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/svg+xml',
+            purpose: 'any maskable',
           }
         ]
       },
