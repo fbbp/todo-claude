@@ -81,7 +81,8 @@ export const useCategories = create<CategoryStore>((set, get) => ({
         order: index + 1 
       }));
       
-      await db.transaction('rw', db.categories, async () => {
+      // Use Dexie's transaction method
+      await db.transaction('rw', db.categories, async function () {
         for (const cat of updates) {
           await db.categories.update(cat.id!, { order: cat.order });
         }

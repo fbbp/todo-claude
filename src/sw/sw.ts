@@ -2,7 +2,7 @@
 /// <reference path="./service-worker.d.ts" />
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
-import { CacheFirst, NetworkFirst } from 'workbox-strategies';
+import { CacheFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 
 declare let self: ServiceWorkerGlobalScope;
@@ -34,19 +34,7 @@ registerRoute(
   })
 );
 
-// Handle API-like requests
-registerRoute(
-  ({ url }) => url.pathname.includes('/api/'),
-  new NetworkFirst({
-    cacheName: 'api-cache',
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 50,
-        maxAgeSeconds: 5 * 60, // 5 minutes
-      }),
-    ],
-  })
-);
+// 完全オフラインアプリなのでAPIリクエストのキャッシュは不要
 
 // Handle notification scheduling
 interface NotificationPayload {
@@ -140,9 +128,44 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
   }
 });
 
+// Handle service worker activation
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    (async () => {
+      // Clean up old caches
+      const cacheNames = await caches.keys();
+      await Promise.all(
+        cacheNames
+          .filter((cacheName) => cacheName !== 'static-resources')
+          .map((cacheName) => caches.delete(cacheName))
+      );
+      
+      // Take control of all clients immediately
+      await self.clients.claim();
+    })()
+  );
+});
+
 // Handle skip waiting
 self.addEventListener('message', (event) => {
   if (event.data === 'skipWaiting') {
     self.skipWaiting();
   }
+});
+
+// Handle fetch errors for offline fallback
+self.addEventListener('fetch', (event) => {
+  // Only handle navigation requests
+  if (event.request.mode !== 'navigate') return;
+  
+  event.respondWith(
+    fetch(event.request).catch(async () => {
+      // Return cached index.html on navigation failure
+      const response = await caches.match('/todo-claude/index.html');
+      if (!response) {
+        throw new Error('No cached index.html found');
+      }
+      return response;
+    })
+  );
 });

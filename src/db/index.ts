@@ -49,21 +49,12 @@ export class TodoDB extends Dexie {
       tasks: 'id, status, dueAt, categoryId, [status+dueAt], [categoryId+status], createdAt',
       categories: 'id, order, name',
       settings: 'key',
-    }).upgrade(async (trans) => {
+    }).upgrade(async () => {
       // アーカイブ機能のためのデータ移行は不要（新しいステータスを追加しただけ）
       console.log('Upgraded database to version 2');
     });
   }
   
-  // エラーハンドリング強化
-  async transaction(mode: 'r' | 'rw', scope: (...args: any[]) => Promise<any>) {
-    try {
-      return await Dexie.transaction(mode, this.tasks, this.categories, this.settings, scope);
-    } catch (error) {
-      console.error('Database transaction error:', error);
-      throw error;
-    }
-  }
 }
 
 export const db = new TodoDB();

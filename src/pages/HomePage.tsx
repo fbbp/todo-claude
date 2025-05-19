@@ -5,6 +5,7 @@ import { TaskCard } from '@/components/TaskCard';
 import { TaskForm } from '@/components/TaskForm';
 import { TimelineBar } from '@/components/TimelineBar';
 import { CategoryBadge } from '@/components/CategoryBadge';
+import { ServiceWorkerUpdate } from '@/components/ServiceWorkerUpdate';
 import { Button } from '@/components/ui/button';
 import { useTasks } from '../store/useTasks';
 import { useCategories } from '../store/useCategories';
@@ -16,7 +17,7 @@ export function HomePage() {
   const { tasks, loading, load, add, update, remove, toggleStatus } = useTasks();
   const { categories, load: loadCategories } = useCategories();
   const { permission, requestPermission, scheduleNotification, cancelNotification } = useNotifications();
-  const { isOffline, showReload, reloadPage } = useServiceWorker();
+  const { isOffline } = useServiceWorker();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [taskFormOpen, setTaskFormOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | undefined>();
@@ -52,6 +53,7 @@ export function HomePage() {
       ...taskData,
       categoryId: selectedCategory || undefined,
     });
+
     if (taskId && taskData.dueAt) {
       const newTask = { ...taskData, id: taskId } as Task;
       scheduleNotification(newTask);
@@ -99,11 +101,6 @@ export function HomePage() {
                 <div className="rounded-md bg-yellow-50 px-3 py-1 text-sm text-yellow-800">
                   オフライン
                 </div>
-              )}
-              {showReload && (
-                <Button variant="outline" size="sm" onClick={reloadPage}>
-                  アップデートを適用
-                </Button>
               )}
             </div>
 
@@ -207,6 +204,9 @@ export function HomePage() {
         onSubmit={editingTask ? handleEditTask : handleAddTask}
         onDelete={handleDeleteTask}
       />
+      
+      {/* Service Worker更新通知 */}
+      <ServiceWorkerUpdate />
     </div>
   );
 }
