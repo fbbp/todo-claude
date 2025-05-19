@@ -53,14 +53,22 @@ export function useNotifications() {
     });
   };
 
-  const snoozeNotification = (taskId: string) => {
-    if (!registration?.active) {
+  const snoozeNotification = (task: Task) => {
+    if (!registration?.active || !task.dueAt) {
       return;
     }
 
-    // This would need to be implemented to reschedule the notification
-    // For now, we'll let the main app handle the snooze logic
-    console.log(`Snoozing task ${taskId} for ${snoozeMin} minutes`);
+    // Reschedule notification for snoozeMin minutes from now
+    const snoozeTime = Date.now() + (snoozeMin * 60 * 1000);
+    
+    registration.active.postMessage({
+      type: 'SCHEDULE_NOTIFICATION',
+      payload: {
+        taskId: task.id,
+        title: task.title,
+        dueAt: snoozeTime,
+      },
+    });
   };
 
   // Listen for messages from service worker
@@ -76,6 +84,9 @@ export function useNotifications() {
       } else if (type === 'SNOOZE_TASK') {
         // This will be handled by the main app
         window.dispatchEvent(new CustomEvent('snoozeTask', { detail: { taskId } }));
+      } else if (type === 'FOCUS_TASK') {
+        // This will be handled by the main app
+        window.dispatchEvent(new CustomEvent('focusTask', { detail: { taskId } }));
       }
     };
 

@@ -65,15 +65,29 @@ function scheduleNotification(payload: NotificationPayload) {
   if (delay <= 0) return;
   
   const timeout = setTimeout(() => {
+    const now = new Date();
+    const dueTime = new Date(dueAt);
+    const diffMinutes = Math.round((dueTime.getTime() - now.getTime()) / (1000 * 60));
+    
+    let bodyText = '';
+    if (diffMinutes > 0) {
+      bodyText = `あと${diffMinutes}分で期限です`;
+    } else if (diffMinutes === 0) {
+      bodyText = '期限です';
+    } else {
+      bodyText = `${Math.abs(diffMinutes)}分過ぎています`;
+    }
+    
     (self.registration as ExtendedServiceWorkerRegistration).showNotification(title, {
-      body: '期限です',
+      body: bodyText,
       icon: '/todo-claude/icon.svg',
       badge: '/todo-claude/icon.svg',
       tag: taskId,
       requireInteraction: true,
+      timestamp: dueAt,
       actions: [
         { action: 'complete', title: '完了' },
-        { action: 'snooze', title: '5分後に通知' },
+        { action: 'snooze', title: '5分後に再通知' },
       ],
     });
     
@@ -100,30 +114,44 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
   if (action === 'complete') {
     // Send message to complete task
     event.waitUntil(
-      self.clients.matchAll({ type: 'window' }).then((clients) => {
+      self.clients.matchAll({ type: 'window' }).then(async (clients) => {
         const client = clients[0];
         if (client) {
           client.postMessage({ type: 'COMPLETE_TASK', taskId: tag });
-          client.focus();
+          await client.focus();
         } else {
-          self.clients.openWindow('/');
+          const newClient = await self.clients.openWindow('/todo-claude/');
+          newClient?.postMessage({ type: 'COMPLETE_TASK', taskId: tag });
         }
       })
     );
   } else if (action === 'snooze') {
     // Reschedule notification
     event.waitUntil(
-      self.clients.matchAll({ type: 'window' }).then((clients) => {
+      self.clients.matchAll({ type: 'window' }).then(async (clients) => {
         const client = clients[0];
         if (client) {
           client.postMessage({ type: 'SNOOZE_TASK', taskId: tag });
+          await client.focus();
+        } else {
+          const newClient = await self.clients.openWindow('/todo-claude/');
+          newClient?.postMessage({ type: 'SNOOZE_TASK', taskId: tag });
         }
       })
     );
   } else {
-    // Default action - open app
+    // Default action - open app and focus on task
     event.waitUntil(
-      self.clients.openWindow('/')
+      self.clients.matchAll({ type: 'window' }).then(async (clients) => {
+        const client = clients[0];
+        if (client) {
+          await client.focus();
+          client.postMessage({ type: 'FOCUS_TASK', taskId: tag });
+        } else {
+          const newClient = await self.clients.openWindow('/todo-claude/');
+          newClient?.postMessage({ type: 'FOCUS_TASK', taskId: tag });
+        }
+      })
     );
   }
 });
