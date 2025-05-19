@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { exportData, validateImportData, importData } from './export-import';
+import { exportData, validateImportData } from './export-import';
 import { db } from '@/db';
 import type { Task, Category, Setting } from '@/db';
 
@@ -22,7 +22,7 @@ vi.mock('@/db', () => ({
       put: vi.fn(),
       get: vi.fn(),
     },
-    transaction: vi.fn((mode, ...tables) => {
+    transaction: vi.fn((_mode, ...tables) => {
       const callback = tables[tables.length - 1];
       return callback();
     }),
@@ -142,7 +142,7 @@ describe('export-import utilities', () => {
 
   describe('importData', () => {
     it('should import data in replace mode', async () => {
-      const importData = {
+      const mockImportData = {
         version: '1.0.0',
         exportedAt: Date.now(),
         data: {
@@ -170,7 +170,7 @@ describe('export-import utilities', () => {
       };
       
       const { importData: importFn } = await import('./export-import');
-      await importFn(importData, 'replace');
+      await importFn(mockImportData, 'replace');
       
       // Clear operationsが呼ばれているか確認
       expect(db.tasks.clear).toHaveBeenCalled();

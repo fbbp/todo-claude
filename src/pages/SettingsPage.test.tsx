@@ -81,7 +81,6 @@ describe('SettingsPage', () => {
   it('should handle file selection and show import dialog', () => {
     renderWithRouter(<SettingsPage />);
     
-    const importButton = screen.getByText('データをインポート');
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     
     expect(fileInput).toBeInTheDocument();

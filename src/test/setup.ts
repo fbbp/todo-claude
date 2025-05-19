@@ -18,8 +18,10 @@ if (!global.crypto?.randomUUID) {
 }
 
 // Mock ResizeObserver for tests
-global.ResizeObserver = class ResizeObserver {
+const mockResizeObserver = class ResizeObserver {
   observe() {}
   unobserve() {}
   disconnect() {}
-};
+} as unknown as typeof ResizeObserver;
+
+(globalThis as any).ResizeObserver = mockResizeObserver;

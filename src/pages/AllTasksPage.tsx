@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Archive, CheckCircle, Circle, Filter, Search, SortAsc, Trash2 } from 'lucide-react';
+import { Archive, Search, SortAsc, Trash2 } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { TaskCard } from '@/components/TaskCard';
 import { TaskForm } from '@/components/TaskForm';
