@@ -7,11 +7,10 @@ import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 interface NavbarProps {
-  onMenuClick?: () => void;
   onAddClick?: () => void;
 }
 
-export function Navbar({ onMenuClick, onAddClick }: NavbarProps) {
+export function Navbar({ onAddClick }: NavbarProps) {
   const { isOffline } = useServiceWorker();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
