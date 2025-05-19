@@ -117,4 +117,40 @@ describe('useTasks Store', () => {
       expect(result.current.tasks).toHaveLength(0);
     });
   });
+
+  it('should handle archived tasks', async () => {
+    const { result } = renderHook(() => useTasks());
+
+    let taskId: string;
+    await waitFor(async () => {
+      taskId = (await result.current.add({ title: 'To Archive' }))!;
+    });
+
+    await waitFor(async () => {
+      await result.current.update(taskId!, { status: 'archived' });
+    });
+
+    await waitFor(() => {
+      const task = result.current.tasks.find(t => t.id === taskId);
+      expect(task?.status).toBe('archived');
+    });
+  });
+
+  it('should filter archived tasks when loading', async () => {
+    const now = Date.now();
+    await db.tasks.bulkAdd([
+      { id: crypto.randomUUID(), title: 'Active Task', status: 'pending', createdAt: now, updatedAt: now },
+      { id: crypto.randomUUID(), title: 'Archived Task', status: 'archived', createdAt: now, updatedAt: now },
+    ]);
+
+    const { result } = renderHook(() => useTasks());
+
+    await waitFor(async () => {
+      await result.current.load();
+    });
+
+    expect(result.current.tasks).toHaveLength(2);
+    const archivedCount = result.current.tasks.filter(t => t.status === 'archived').length;
+    expect(archivedCount).toBe(1);
+  });
 });

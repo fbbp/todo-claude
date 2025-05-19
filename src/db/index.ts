@@ -6,7 +6,7 @@ export interface Task {
   dueAt?: number;
   durationMin?: number;
   categoryId?: string;
-  status: 'pending' | 'done';
+  status: 'pending' | 'done' | 'archived';
   checklist?: Array<{
     id: string;
     text: string;
@@ -36,12 +36,45 @@ export class TodoDB extends Dexie {
 
   constructor() {
     super('todo');
+    
+    // Version 1: Initial schema
     this.version(1).stores({
       tasks: 'id, status, dueAt, categoryId',
       categories: 'id, order',
       settings: 'key',
     });
+    
+    // Version 2: Enhanced indexes and archived status
+    this.version(2).stores({
+      tasks: 'id, status, dueAt, categoryId, [status+dueAt], [categoryId+status], createdAt',
+      categories: 'id, order, name',
+      settings: 'key',
+    }).upgrade(async (trans) => {
+      // アーカイブ機能のためのデータ移行は不要（新しいステータスを追加しただけ）
+      console.log('Upgraded database to version 2');
+    });
+  }
+  
+  // エラーハンドリング強化
+  async transaction(mode: 'r' | 'rw', scope: (...args: any[]) => Promise<any>) {
+    try {
+      return await Dexie.transaction(mode, this.tasks, this.categories, this.settings, scope);
+    } catch (error) {
+      console.error('Database transaction error:', error);
+      throw error;
+    }
   }
 }
 
 export const db = new TodoDB();
+
+// データベースの初期化とエラーハンドリング
+export async function initializeDB() {
+  try {
+    await db.open();
+    console.log('Database initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize database:', error);
+    throw error;
+  }
+}

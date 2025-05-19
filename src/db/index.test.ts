@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { db } from './index';
+import { db, initializeDB } from './index';
 import type { Task, Category } from './index';
 
 describe('TodoDB', () => {
@@ -11,6 +11,12 @@ describe('TodoDB', () => {
     await db.tasks.clear();
     await db.categories.clear();
     await db.settings.clear();
+  });
+
+  describe('Database Initialization', () => {
+    it('should initialize database successfully', async () => {
+      await expect(initializeDB()).resolves.toBeUndefined();
+    });
   });
 
   describe('Tasks', () => {
@@ -29,6 +35,28 @@ describe('TodoDB', () => {
 
       const savedTask = await db.tasks.get(id);
       expect(savedTask).toMatchObject(task);
+    });
+
+    it('should handle archived status', async () => {
+      const now = Date.now();
+      const id = crypto.randomUUID();
+      const task: Task = {
+        id,
+        title: 'Archived Task',
+        status: 'archived',
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      await db.tasks.add(task);
+
+      const savedTask = await db.tasks.get(id);
+      expect(savedTask?.status).toBe('archived');
+      
+      // Query archived tasks
+      const archivedTasks = await db.tasks.where('status').equals('archived').toArray();
+      expect(archivedTasks).toHaveLength(1);
+      expect(archivedTasks[0].title).toBe('Archived Task');
     });
 
     it('should query tasks by status', async () => {
@@ -59,6 +87,46 @@ describe('TodoDB', () => {
         .toArray();
       expect(todayTasks).toHaveLength(1);
       expect(todayTasks[0].title).toBe('Today Task');
+    });
+
+    it('should use compound index for status and dueAt', async () => {
+      const now = Date.now();
+      const tomorrow = now + 24 * 60 * 60 * 1000;
+
+      await db.tasks.bulkAdd([
+        { id: crypto.randomUUID(), title: 'Pending Today', status: 'pending', dueAt: now, createdAt: now, updatedAt: now },
+        { id: crypto.randomUUID(), title: 'Done Today', status: 'done', dueAt: now, createdAt: now, updatedAt: now },
+        { id: crypto.randomUUID(), title: 'Pending Tomorrow', status: 'pending', dueAt: tomorrow, createdAt: now, updatedAt: now },
+      ]);
+
+      // Use compound index to query pending tasks due today
+      const pendingToday = await db.tasks
+        .where('[status+dueAt]')
+        .between(['pending', now - 1000], ['pending', now + 1000])
+        .toArray();
+      
+      expect(pendingToday).toHaveLength(1);
+      expect(pendingToday[0].title).toBe('Pending Today');
+    });
+
+    it('should use compound index for categoryId and status', async () => {
+      const now = Date.now();
+      const categoryId = crypto.randomUUID();
+
+      await db.tasks.bulkAdd([
+        { id: crypto.randomUUID(), title: 'Work Pending', status: 'pending', categoryId, createdAt: now, updatedAt: now },
+        { id: crypto.randomUUID(), title: 'Work Done', status: 'done', categoryId, createdAt: now, updatedAt: now },
+        { id: crypto.randomUUID(), title: 'Personal Pending', status: 'pending', categoryId: crypto.randomUUID(), createdAt: now, updatedAt: now },
+      ]);
+
+      // Use compound index to query pending tasks in specific category
+      const categoryPending = await db.tasks
+        .where('[categoryId+status]')
+        .equals([categoryId, 'pending'])
+        .toArray();
+      
+      expect(categoryPending).toHaveLength(1);
+      expect(categoryPending[0].title).toBe('Work Pending');
     });
   });
 
