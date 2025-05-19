@@ -16,3 +16,10 @@ if (!global.crypto?.randomUUID) {
     }
   });
 }
+
+// Mock ResizeObserver for tests
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
