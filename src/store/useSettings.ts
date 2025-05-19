@@ -9,10 +9,12 @@ interface SettingsStore {
   snoozeMin: number;
   loading: boolean;
   error: string | null;
+  settings: Record<string, any>;
   load: () => Promise<void>;
   setTheme: (theme: Theme) => Promise<void>;
   setNotifyBeforeMin: (minutes: number) => Promise<void>;
   setSnoozeMin: (minutes: number) => Promise<void>;
+  updateSetting: (key: string, value: any) => Promise<void>;
 }
 
 export const useSettings = create<SettingsStore>((set) => ({
@@ -21,6 +23,7 @@ export const useSettings = create<SettingsStore>((set) => ({
   snoozeMin: 5,
   loading: false,
   error: null,
+  settings: {},
   
   load: async () => {
     set({ loading: true, error: null });
@@ -35,6 +38,7 @@ export const useSettings = create<SettingsStore>((set) => ({
         theme: (settingsMap.theme as Theme) || 'light',
         notifyBeforeMin: (settingsMap.notifyBeforeMin as number) || 15,
         snoozeMin: (settingsMap.snoozeMin as number) || 5,
+        settings: settingsMap,
         loading: false,
       });
     } catch (error) {
@@ -64,6 +68,20 @@ export const useSettings = create<SettingsStore>((set) => ({
     try {
       await db.settings.put({ key: 'snoozeMin', value: minutes });
       set({ snoozeMin: minutes });
+    } catch (error) {
+      set({ error: (error as Error).message });
+    }
+  },
+  
+  updateSetting: async (key, value) => {
+    try {
+      await db.settings.put({ key, value });
+      set((state) => ({
+        settings: { ...state.settings, [key]: value },
+        ...(key === 'theme' && { theme: value }),
+        ...(key === 'notifyBeforeMin' && { notifyBeforeMin: value }),
+        ...(key === 'snoozeMin' && { snoozeMin: value }),
+      }));
     } catch (error) {
       set({ error: (error as Error).message });
     }

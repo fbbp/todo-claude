@@ -3,7 +3,6 @@ import { renderHook, act } from '@testing-library/react';
 import { useTasks } from './useTasks';
 import { db } from '../db';
 import type { Task } from '../db';
-import { RRule } from 'rrule';
 
 vi.mock('../db', () => ({
   db: {
