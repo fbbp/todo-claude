@@ -34,23 +34,25 @@ export function TaskForm({ open, onOpenChange, task, onSubmit, onDelete }: TaskF
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!title.trim()) return;
-    
+
     let dueAt: number | undefined;
     if (dueDate) {
       const dateTime = dueTime ? `${dueDate}T${dueTime}` : `${dueDate}T00:00`;
       dueAt = new Date(dateTime).getTime();
     }
-    
-    onSubmit({
+
+    const taskData = {
       id: task?.id,
       title: title.trim(),
       dueAt,
       durationMin: durationMin ? parseInt(durationMin) : undefined,
       checklist: checklist.filter((item: any) => item.text.trim()),
-    });
-    
+    };
+
+    onSubmit(taskData);
+
     onOpenChange(false);
   };
   

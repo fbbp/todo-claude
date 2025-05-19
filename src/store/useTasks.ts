@@ -32,18 +32,22 @@ export const useTasks = create<TaskStore>((set, get) => ({
     try {
       const id = crypto.randomUUID();
       const now = Date.now();
+
+      // draft から id を除外して新しいタスクを作成
+      const { id: draftId, ...draftWithoutId } = draft;
+
       const task: Task = {
         id,
         title: draft.title || '',
         status: 'pending',
         createdAt: now,
         updatedAt: now,
-        ...draft,
+        ...draftWithoutId,
       };
-      
+
       await db.tasks.add(task);
       set({ tasks: [...get().tasks, task] });
-      
+
       return id;
     } catch (error) {
       set({ error: (error as Error).message });

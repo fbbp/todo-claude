@@ -1,24 +1,34 @@
 import { useEffect, useState } from 'react';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 
 export function useServiceWorker() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [registration, setRegistration] = useState<ServiceWorkerRegistration | null>(null);
-  const [showReload, setShowReload] = useState(false);
-  // const [wb, setWb] = useState<any>(null);
+  
+  // PWA update handling
+  const {
+    offlineReady: [offlineReady],
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegistered(r) {
+      if (r) {
+        setRegistration(r);
+        console.log('Service Worker registered');
+      }
+    },
+    onRegisterError(error) {
+      console.error('Service Worker registration error:', error);
+    },
+  });
 
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      // Service worker is registered by vite-pwa-plugin
-      navigator.serviceWorker.ready.then((reg) => {
-        setRegistration(reg);
-      });
-
-      // Listen for new service worker
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        setShowReload(true);
-      });
+    if (offlineReady) {
+      console.log('App is ready to work offline');
     }
+  }, [offlineReady]);
 
+  useEffect(() => {
     // Handle online/offline status
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
@@ -33,14 +43,15 @@ export function useServiceWorker() {
   }, []);
 
   const reloadPage = () => {
-    // Just reload the page to activate new service worker
-    window.location.reload();
+    // Update service worker and reload
+    updateServiceWorker(true);
   };
 
   return {
     isOffline,
     registration,
-    showReload,
+    needRefresh,
+    offlineReady,
     reloadPage,
   };
 }
