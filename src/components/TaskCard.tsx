@@ -15,6 +15,7 @@ export function TaskCard({ task, onToggle, onClick }: TaskCardProps) {
   
   return (
     <Card 
+      id={`task-${task.id}`}
       className={cn(
         'cursor-pointer transition-all hover:shadow-md',
         task.status === 'done' && 'opacity-60'

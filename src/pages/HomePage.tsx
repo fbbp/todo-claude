@@ -16,7 +16,7 @@ import { useServiceWorker } from '../hooks/useServiceWorker';
 export function HomePage() {
   const { tasks, loading, load, add, update, remove, toggleStatus } = useTasks();
   const { categories, load: loadCategories } = useCategories();
-  const { permission, requestPermission, scheduleNotification, cancelNotification } = useNotifications();
+  const { permission, requestPermission, scheduleNotification, cancelNotification, snoozeNotification } = useNotifications();
   const { isOffline } = useServiceWorker();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [taskFormOpen, setTaskFormOpen] = useState(false);
@@ -27,6 +27,50 @@ export function HomePage() {
     load();
     loadCategories();
   }, [load, loadCategories]);
+  
+  // Handle service worker messages
+  useEffect(() => {
+    const handleCompleteTask = async (event: CustomEvent) => {
+      const { taskId } = event.detail;
+      await toggleStatus(taskId);
+    };
+
+    const handleSnoozeTask = async (event: CustomEvent) => {
+      const { taskId } = event.detail;
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        snoozeNotification(task);
+      }
+    };
+    
+    const handleFocusTask = (event: CustomEvent) => {
+      const { taskId } = event.detail;
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        // Scroll to task if it exists on the page
+        const taskElement = document.getElementById(`task-${taskId}`);
+        if (taskElement) {
+          taskElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          taskElement.classList.add('ring-2', 'ring-blue-500');
+          setTimeout(() => {
+            taskElement.classList.remove('ring-2', 'ring-blue-500');
+          }, 3000);
+        }
+        // Open task in edit form
+        openTaskForm(task);
+      }
+    };
+
+    window.addEventListener('completeTask', handleCompleteTask as any);
+    window.addEventListener('snoozeTask', handleSnoozeTask as any);
+    window.addEventListener('focusTask', handleFocusTask as any);
+
+    return () => {
+      window.removeEventListener('completeTask', handleCompleteTask as any);
+      window.removeEventListener('snoozeTask', handleSnoozeTask as any);
+      window.removeEventListener('focusTask', handleFocusTask as any);
+    };
+  }, [tasks, toggleStatus]);
   
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
@@ -105,24 +149,35 @@ export function HomePage() {
             </div>
 
             {permission !== 'granted' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  const result = await requestPermission();
-                  if (result === 'granted') {
-                    // Schedule notifications for existing tasks
-                    tasks.forEach(task => {
-                      if (task.dueAt) {
-                        scheduleNotification(task);
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    const result = await requestPermission();
+                    if (result === 'granted') {
+                      // Schedule notifications for existing tasks
+                      const notificationCount = tasks.filter(task => task.dueAt && task.status === 'pending').length;
+                      tasks.forEach(task => {
+                        if (task.dueAt && task.status === 'pending') {
+                          scheduleNotification(task);
+                        }
+                      });
+                      if (notificationCount > 0) {
+                        alert(`${notificationCount}件のタスクに通知を設定しました`);
                       }
-                    });
-                  }
-                }}
-              >
-                <Bell className="h-4 w-4 mr-1" />
-                通知を有効にする
-              </Button>
+                    }
+                  }}
+                >
+                  <Bell className="h-4 w-4 mr-1" />
+                  通知を有効にする
+                </Button>
+                {permission === 'denied' && (
+                  <span className="text-sm text-red-600">
+                    通知がブロックされています
+                  </span>
+                )}
+              </div>
             )}
           </div>
           {/* カテゴリーフィルター */}
