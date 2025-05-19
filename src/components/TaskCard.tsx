@@ -1,4 +1,4 @@
-import { Check, Circle } from 'lucide-react';
+import { Check, Circle, Repeat } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -31,12 +31,17 @@ export function TaskCard({ task, onToggle, onClick }: TaskCardProps) {
         />
         
         <div className="flex-1">
-          <h3 className={cn(
-            'font-medium',
-            task.status === 'done' && 'line-through text-muted-foreground'
-          )}>
-            {task.title}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className={cn(
+              'font-medium',
+              task.status === 'done' && 'line-through text-muted-foreground'
+            )}>
+              {task.title}
+            </h3>
+            {task.repeatRule && (
+              <Repeat className="h-4 w-4 text-muted-foreground" aria-label="繰り返しタスク" />
+            )}
+          </div>
           
           {task.dueAt && (
             <p className={cn(

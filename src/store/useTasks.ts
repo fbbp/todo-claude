@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { db } from '../db';
 import type { Task } from '../db';
+import { RRule } from 'rrule';
 
 interface TaskStore {
   tasks: Task[];
@@ -34,7 +35,7 @@ export const useTasks = create<TaskStore>((set, get) => ({
       const now = Date.now();
 
       // draft から id を除外して新しいタスクを作成
-      const { id: draftId, ...draftWithoutId } = draft;
+      const { id: _, ...draftWithoutId } = draft;
 
       const task: Task = {
         id,
@@ -85,6 +86,37 @@ export const useTasks = create<TaskStore>((set, get) => ({
     if (!task) return;
     
     const newStatus = task.status === 'pending' ? 'done' : 'pending';
+    
+    // タスクが完了し、繰り返しルールがある場合、次のタスクを作成
+    if (newStatus === 'done' && task.repeatRule && task.dueAt) {
+      try {
+        const rrule = RRule.fromString(task.repeatRule);
+        const currentDue = new Date(task.dueAt);
+        
+        // 現在の期日より後の次の繰り返し日を取得
+        const nextDate = rrule.after(currentDue, false);
+        
+        if (nextDate) {
+          // 繰り返しタスクを作成
+          const nextTask: Partial<Task> = {
+            title: task.title,
+            dueAt: nextDate.getTime(),
+            durationMin: task.durationMin,
+            categoryId: task.categoryId,
+            checklist: task.checklist?.map(item => ({ ...item, checked: false })),
+            repeatRule: task.repeatRule,
+            repeatParentId: task.repeatParentId || task.id, // 初回の場合は現在のタスクが親
+            repeatCount: (task.repeatCount || 0) + 1,
+            repeatUntil: task.repeatUntil,
+          };
+          
+          await get().add(nextTask);
+        }
+      } catch (error) {
+        console.error('Failed to create recurring task:', error);
+      }
+    }
+    
     await get().update(id, { status: newStatus });
   },
 }));

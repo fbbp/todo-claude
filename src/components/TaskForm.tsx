@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar, Clock, Plus, Trash2 } from 'lucide-react';
+import { Calendar, Clock, Plus, Trash2, Repeat } from 'lucide-react';
 import { 
   Dialog, 
   DialogContent, 
@@ -11,6 +11,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { RRule, type Frequency } from 'rrule';
 import type { Task } from '../db';
 
 interface TaskFormProps {
@@ -31,6 +39,30 @@ export function TaskForm({ open, onOpenChange, task, onSubmit, onDelete }: TaskF
   );
   const [durationMin, setDurationMin] = useState(task?.durationMin?.toString() || '');
   const [checklist, setChecklist] = useState(task?.checklist || []);
+  
+  // 繰り返し設定のステート
+  const [repeatEnabled, setRepeatEnabled] = useState(!!task?.repeatRule);
+  const [repeatFrequency, setRepeatFrequency] = useState<string>('DAILY');
+  const [repeatInterval, setRepeatInterval] = useState('1');
+  const [repeatUntil, setRepeatUntil] = useState(
+    task?.repeatUntil ? new Date(task.repeatUntil).toISOString().split('T')[0] : ''
+  );
+  
+  // 既存のタスクからRRULEを解析
+  useState(() => {
+    if (task?.repeatRule) {
+      try {
+        const rrule = RRule.fromString(task.repeatRule);
+        setRepeatFrequency(RRule.FREQUENCIES[rrule.options.freq]);
+        setRepeatInterval(rrule.options.interval?.toString() || '1');
+        if (rrule.options.until) {
+          setRepeatUntil(rrule.options.until.toISOString().split('T')[0]);
+        }
+      } catch (error) {
+        console.error('Failed to parse RRULE:', error);
+      }
+    }
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +74,28 @@ export function TaskForm({ open, onOpenChange, task, onSubmit, onDelete }: TaskF
       const dateTime = dueTime ? `${dueDate}T${dueTime}` : `${dueDate}T00:00`;
       dueAt = new Date(dateTime).getTime();
     }
+    
+    // RRULEを生成
+    let repeatRule: string | undefined;
+    let repeatUntilTimestamp: number | undefined;
+    if (repeatEnabled && dueAt) {
+      const freq = RRule[repeatFrequency as keyof typeof RRule] as Frequency;
+      const rruleOptions: any = {
+        freq,
+        interval: parseInt(repeatInterval) || 1,
+        dtstart: new Date(dueAt),
+      };
+      
+      if (repeatUntil) {
+        const untilDate = new Date(repeatUntil);
+        untilDate.setHours(23, 59, 59, 999);
+        rruleOptions.until = untilDate;
+        repeatUntilTimestamp = untilDate.getTime();
+      }
+      
+      const rrule = new RRule(rruleOptions);
+      repeatRule = rrule.toString();
+    }
 
     const taskData = {
       id: task?.id,
@@ -49,6 +103,8 @@ export function TaskForm({ open, onOpenChange, task, onSubmit, onDelete }: TaskF
       dueAt,
       durationMin: durationMin ? parseInt(durationMin) : undefined,
       checklist: checklist.filter((item: any) => item.text.trim()),
+      repeatRule,
+      repeatUntil: repeatUntilTimestamp,
     };
 
     onSubmit(taskData);
@@ -133,6 +189,75 @@ export function TaskForm({ open, onOpenChange, task, onSubmit, onDelete }: TaskF
                 placeholder="60"
                 min="1"
               />
+            </div>
+            
+            <div>
+              <div className="flex items-center space-x-2 mb-2">
+                <Checkbox
+                  id="repeat"
+                  checked={repeatEnabled}
+                  onCheckedChange={(checked) => setRepeatEnabled(!!checked)}
+                />
+                <Label htmlFor="repeat" className="flex items-center gap-2 cursor-pointer">
+                  <Repeat className="h-4 w-4" />
+                  繰り返し
+                </Label>
+              </div>
+              
+              {repeatEnabled && (
+                <div className="space-y-3 pl-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="frequency">頻度</Label>
+                      <Select value={repeatFrequency} onValueChange={setRepeatFrequency}>
+                        <SelectTrigger id="frequency">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="DAILY">毎日</SelectItem>
+                          <SelectItem value="WEEKLY">毎週</SelectItem>
+                          <SelectItem value="MONTHLY">毎月</SelectItem>
+                          <SelectItem value="YEARLY">毎年</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="interval">間隔</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="interval"
+                          type="number"
+                          value={repeatInterval}
+                          onChange={(e) => setRepeatInterval(e.target.value)}
+                          min="1"
+                          max="99"
+                        />
+                        <span className="text-sm text-muted-foreground">
+                          {repeatFrequency === 'DAILY' && '日ごと'}
+                          {repeatFrequency === 'WEEKLY' && '週ごと'}
+                          {repeatFrequency === 'MONTHLY' && 'ヶ月ごと'}
+                          {repeatFrequency === 'YEARLY' && '年ごと'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="repeatUntil">終了日</Label>
+                    <Input
+                      id="repeatUntil"
+                      type="date"
+                      value={repeatUntil}
+                      onChange={(e) => setRepeatUntil(e.target.value)}
+                      min={dueDate}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      空欄の場合は無期限に繰り返します
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div>
