@@ -1,15 +1,15 @@
 /// <reference lib="webworker" />
 
-interface NotificationAction {
+export interface NotificationAction {
   action: string;
   title: string;
   icon?: string;
 }
 
-interface ExtendedNotificationOptions extends NotificationOptions {
+export interface ExtendedNotificationOptions extends NotificationOptions {
   actions?: NotificationAction[];
   badge?: string;
-  data?: any;
+  data?: unknown;
   dir?: NotificationDirection;
   icon?: string;
   image?: string;
@@ -22,11 +22,11 @@ interface ExtendedNotificationOptions extends NotificationOptions {
   vibrate?: VibratePattern;
 }
 
-interface ExtendedServiceWorkerRegistration extends ServiceWorkerRegistration {
+export interface ExtendedServiceWorkerRegistration extends ServiceWorkerRegistration {
   showNotification(title: string, options?: ExtendedNotificationOptions): Promise<void>;
 }
 
-interface NotificationEvent extends ExtendedEvent {
+export interface NotificationEvent extends ExtendedEvent {
   notification: Notification;
   action: string;
 }
