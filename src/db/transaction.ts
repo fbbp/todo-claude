@@ -1,5 +1,6 @@
 import { db } from './index';
 import type { Table } from 'dexie';
+import type { Task, Category, Setting } from './index';
 
 /**
  * 読み取り/書き込みトランザクションを実行する
@@ -93,7 +94,7 @@ export async function executeBulkOperations<T>(
  */
 export async function batchUpdateTasks(
   taskIds: string[],
-  updates: Partial<Omit<unknown, 'id' | 'createdAt'>>
+  updates: Partial<Omit<Task, 'id' | 'createdAt'>>
 ): Promise<number> {
   if (taskIds.length === 0) return 0;
   
@@ -206,9 +207,9 @@ export async function withOperationLock<T>(
  * すべてのデータを一貫性のある状態で取得する
  */
 export async function exportAllData(): Promise<{
-  tasks: unknown[];
-  categories: unknown[];
-  settings: unknown[];
+  tasks: Task[];
+  categories: Category[];
+  settings: Setting[];
 }> {
   return executeReadOnlyTransaction([db.tasks, db.categories, db.settings], async () => {
     const tasks = await db.tasks.toArray();
@@ -224,9 +225,9 @@ export async function exportAllData(): Promise<{
  * すべてのデータを一貫性を保ちながらインポートする
  */
 export async function importAllData(data: {
-  tasks?: unknown[];
-  categories?: unknown[];
-  settings?: unknown[];
+  tasks?: Task[];
+  categories?: Category[];
+  settings?: Setting[];
 }): Promise<boolean> {
   return executeFullTransaction('rw', async () => {
     // まず既存のデータをクリア
