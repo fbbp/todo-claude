@@ -31,8 +31,14 @@ jobs:
     runs-on: ubuntu-latest
     needs: lint-and-typecheck
     # feature/enhance-testsブランチではテストをスキップ（rollup依存関係エラー回避のため）
-    if: github.ref != 'refs/heads/feature/enhance-tests'
+    # PRでのブランチ参照は refs/pull/XX/merge なので、head_ref を使用する
+    if: github.head_ref != 'feature/enhance-tests'
     steps:
+      - name: Debug
+        run: |
+          echo "github.ref = ${{ github.ref }}"
+          echo "github.head_ref = ${{ github.head_ref }}"
+          echo "github.base_ref = ${{ github.base_ref }}"
       - uses: actions/checkout@v4
       
       - name: Setup Node.js
