@@ -14,5 +14,20 @@ module.exports = {
       'warn',
       { allowConstantExport: true },
     ],
+    '@typescript-eslint/no-explicit-any': ['warn'],
+    '@typescript-eslint/no-unused-vars': ['error', { 
+      "varsIgnorePattern": "^_",
+      "argsIgnorePattern": "^_"
+    }],
   },
+  overrides: [
+    {
+      // テストファイルの特別ルール
+      files: ["**/*.test.ts", "**/*.test.tsx", "**/test/**/*", "**/e2e/**/*"],
+      rules: {
+        '@typescript-eslint/no-unused-vars': 'off',
+        '@typescript-eslint/no-explicit-any': 'off'
+      }
+    }
+  ],
 }

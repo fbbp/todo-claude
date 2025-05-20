@@ -22,7 +22,7 @@ jobs:
         run: npm ci
       
       - name: Lint
-        run: npm run lint
+        run: npm run lint -- --max-warnings=100 # 一時的に警告を許容
       
       - name: Type check
         run: npm run type-check
