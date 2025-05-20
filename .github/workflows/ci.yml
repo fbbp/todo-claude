@@ -30,8 +30,6 @@ jobs:
   unit-tests:
     runs-on: ubuntu-latest
     needs: lint-and-typecheck
-    # rollup依存関係エラー回避のため一時的に全てのテストをスキップ
-    if: false
     steps:
       - name: Debug
         run: |
@@ -50,7 +48,7 @@ jobs:
         run: npm ci
       
       - name: Run unit tests
-        run: npm test -- --run
+        run: npm run test:run
       
       - name: Upload unit test results
         if: always()
@@ -63,10 +61,7 @@ jobs:
 
   e2e-tests:
     runs-on: ubuntu-latest
-    # unit-testsジョブがスキップされた場合でも実行できるように依存関係を調整
     needs: [lint-and-typecheck, unit-tests]
-    # rollup依存関係エラー回避のため一時的に全てのテストをスキップ
-    if: false
     steps:
       - uses: actions/checkout@v4
       
@@ -84,6 +79,7 @@ jobs:
       
       - name: Run Playwright tests
         run: npm run test:e2e:chrome
+        continue-on-error: true  # E2Eテストは失敗しても後続のジョブを続行する
       
       - name: Upload Playwright report
         if: always()
@@ -95,8 +91,7 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-    # テストジョブをスキップしても実行できるように依存関係を調整
-    needs: [lint-and-typecheck]
+    needs: [lint-and-typecheck, unit-tests, e2e-tests]
     steps:
       - uses: actions/checkout@v4
       
@@ -136,7 +131,7 @@ jobs:
 
   notify:
     runs-on: ubuntu-latest
-    needs: [lint-and-typecheck, build-and-deploy, lighthouse]
+    needs: [lint-and-typecheck, unit-tests, e2e-tests, build-and-deploy, lighthouse]
     if: always()
     steps:
       - name: Workflow Status
