@@ -26,7 +26,7 @@ export interface ExtendedServiceWorkerRegistration extends ServiceWorkerRegistra
   showNotification(title: string, options?: ExtendedNotificationOptions): Promise<void>;
 }
 
-export interface NotificationEvent extends ExtendedEvent {
+export interface NotificationEvent extends ExtendableEvent {
   notification: Notification;
   action: string;
 }
