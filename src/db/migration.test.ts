@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { db, initializeDB } from './index';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { db } from './index';
 import * as operations from './operations';
 import * as migration from './migration';
 
@@ -46,6 +46,7 @@ describe('Database Migration', () => {
     const categoryId = await operations.createCategory({
       name: 'Test Category',
       color: '#ff0000',
+      order: 1,
     });
     
     await operations.createTask({
@@ -94,6 +95,7 @@ describe('Database Migration', () => {
     await operations.createCategory({
       name: 'Default',
       color: '#cccccc',
+      order: 1,
     });
     
     await operations.createTask({

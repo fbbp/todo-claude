@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { db, initializeDB } from './index';
+import { db } from './index';
 import { generateSampleData, testIndexPerformance } from './performance';
 
 // テストサイズを小さめに設定して高速化

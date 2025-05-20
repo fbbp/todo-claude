@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-import type {} from './service-worker.d.ts';
+/// <reference path="./service-worker.d.ts" />
 import { cleanupOutdatedCaches, createHandlerBoundToURL, precacheAndRoute } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
 import { CacheFirst } from 'workbox-strategies';

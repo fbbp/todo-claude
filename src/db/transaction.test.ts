@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { db, initializeDB } from './index';
-import type { Task, Category } from './index';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { db } from './index';
 import * as operations from './operations';
 import * as transaction from './transaction';
 
@@ -164,6 +163,7 @@ describe('Transaction Operations', () => {
     const categoryId = await operations.createCategory({
       name: 'Test Category',
       color: '#ff0000',
+      order: 1,
     });
     
     await operations.createTask({
@@ -213,10 +213,12 @@ describe('Transaction Operations', () => {
       () => operations.createCategory({
         name: 'Category 1',
         color: '#ff0000',
+        order: 1,
       }),
       () => operations.createCategory({
         name: 'Category 2',
         color: '#00ff00',
+        order: 1,
       }),
       () => operations.createTask({
         title: 'Task 1',
