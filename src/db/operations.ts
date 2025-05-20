@@ -1,4 +1,4 @@
-import { db, type Task, type Category, type Setting } from './index';
+import { db, type Task, type Category } from './index';
 
 // --------- Task操作関数 ---------
 

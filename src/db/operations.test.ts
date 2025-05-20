@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { db, initializeDB } from './index';
-import type { Task, Category } from './index';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { db } from './index';
 import * as operations from './operations';
 
 describe('DB Operations', () => {
@@ -161,6 +160,7 @@ describe('DB Operations', () => {
       const categoryId = await operations.createCategory({
         name: 'Work',
         color: '#ff0000',
+        order: 1,
       });
 
       // カテゴリ付きのタスクを作成
@@ -229,6 +229,7 @@ describe('DB Operations', () => {
       const categoryId = await operations.createCategory({
         name: 'Work',
         color: '#ff0000',
+        order: 1,
       });
 
       // カテゴリを取得
@@ -271,6 +272,7 @@ describe('DB Operations', () => {
       const categoryId = await operations.createCategory({
         name: 'Original Name',
         color: '#ff0000',
+        order: 1,
       });
 
       // カテゴリを更新
@@ -292,6 +294,7 @@ describe('DB Operations', () => {
       await operations.createCategory({
         name: 'Unique Name',
         color: '#ff0000',
+        order: 1,
       });
 
       // 同じ名前の別カテゴリを作成しようとする
@@ -299,6 +302,7 @@ describe('DB Operations', () => {
         operations.createCategory({
           name: 'Unique Name',
           color: '#00ff00',
+          order: 1,
         })
       ).rejects.toThrow('already exists');
     });
@@ -308,12 +312,14 @@ describe('DB Operations', () => {
       const categoryId = await operations.createCategory({
         name: 'Category to Delete',
         color: '#ff0000',
+        order: 1,
       });
 
       // 別のカテゴリも作成（タスク再割り当て用）
       const newCategoryId = await operations.createCategory({
         name: 'New Category',
         color: '#00ff00',
+        order: 1,
       });
 
       // タスクを作成

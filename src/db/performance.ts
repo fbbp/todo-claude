@@ -1,4 +1,4 @@
-import { db, type Task, type Category } from './index';
+import { db, type Task } from './index';
 import * as operations from './operations';
 
 /**
@@ -77,9 +77,7 @@ export async function generateSampleData(
       ? now + daysOffset * 24 * 60 * 60 * 1000
       : undefined; // 30%のタスクは期限なし
     
-    // ランダムな作成日時 (過去30日以内)
-    const createdDaysAgo = Math.floor(Math.random() * 30);
-    const createdAt = now - createdDaysAgo * 24 * 60 * 60 * 1000;
+    // No longer needed since we let the database handle createdAt/updatedAt timestamps
     
     // チェックリスト (10%のタスクのみ)
     const hasChecklist = Math.random() < 0.1;
@@ -97,8 +95,6 @@ export async function generateSampleData(
       status,
       categoryId,
       dueAt,
-      createdAt,
-      updatedAt: createdAt,
       checklist
     });
     

@@ -128,7 +128,7 @@ async function migrateToV2(db: TodoDB): Promise<void> {
   // アーカイブ機能の追加: ステータスが'archived'に設定できるようになる
   
   // 既存のタスクにカスタムインデックスを追加
-  await db.tasks.toCollection().modify(task => {
+  await db.tasks.toCollection().modify(_task => {
     // アップグレードに必要な変更はなし
     // インデックスは自動的に生成される
   });
@@ -139,19 +139,19 @@ async function migrateToV2(db: TodoDB): Promise<void> {
  */
 async function migrateToV3(db: TodoDB): Promise<void> {
   // 繰り返しタスク機能の追加
-  await db.tasks.toCollection().modify(task => {
+  await db.tasks.toCollection().modify(_task => {
     // 既存のタスクには繰り返し機能がないため、フィールドを追加するだけ
-    if (!('repeatRule' in task)) {
-      task.repeatRule = undefined;
+    if (!('repeatRule' in _task)) {
+      _task.repeatRule = undefined;
     }
-    if (!('repeatParentId' in task)) {
-      task.repeatParentId = undefined;
+    if (!('repeatParentId' in _task)) {
+      _task.repeatParentId = undefined;
     }
-    if (!('repeatCount' in task)) {
-      task.repeatCount = undefined;
+    if (!('repeatCount' in _task)) {
+      _task.repeatCount = undefined;
     }
-    if (!('repeatUntil' in task)) {
-      task.repeatUntil = undefined;
+    if (!('repeatUntil' in _task)) {
+      _task.repeatUntil = undefined;
     }
   });
 }

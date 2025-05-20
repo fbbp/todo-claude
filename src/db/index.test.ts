@@ -261,7 +261,7 @@ describe('TodoDB', () => {
   
   describe('Error Handling', () => {
     it('should handle invalid table access gracefully', async () => {
-      // @ts-ignore - 意図的に型エラーを無視してテスト
+      // @ts-expect-error - 意図的に型エラーを無視してテスト
       const invalidTable = db.nonExistentTable;
       expect(invalidTable).toBeUndefined();
     });
