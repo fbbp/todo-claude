@@ -1,4 +1,4 @@
-import { db, type Task, type Category } from './index';
+import { db, type Task } from './index';
 import * as operations from './operations';
 
 /**
