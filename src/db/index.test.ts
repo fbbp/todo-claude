@@ -15,7 +15,8 @@ describe('TodoDB', () => {
 
   describe('Database Initialization', () => {
     it('should initialize database successfully', async () => {
-      await expect(initializeDB()).resolves.toBeUndefined();
+      const result = await initializeDB();
+      expect(result).toHaveProperty('success', true);
     });
   });
 
@@ -35,6 +36,63 @@ describe('TodoDB', () => {
 
       const savedTask = await db.tasks.get(id);
       expect(savedTask).toMatchObject(task);
+    });
+    
+    it('should update a task', async () => {
+      // まず新しいタスクを作成
+      const now = Date.now();
+      const id = crypto.randomUUID();
+      const task: Task = {
+        id,
+        title: 'Original Title',
+        status: 'pending',
+        createdAt: now,
+        updatedAt: now,
+      };
+      
+      await db.tasks.add(task);
+      
+      // タスクを更新
+      const updateTime = now + 1000;
+      await db.tasks.update(id, {
+        title: 'Updated Title',
+        status: 'done',
+        updatedAt: updateTime
+      });
+      
+      // 更新されたタスクを取得して検証
+      const updatedTask = await db.tasks.get(id);
+      expect(updatedTask).not.toBeUndefined();
+      expect(updatedTask?.title).toBe('Updated Title');
+      expect(updatedTask?.status).toBe('done');
+      expect(updatedTask?.updatedAt).toBe(updateTime);
+      expect(updatedTask?.createdAt).toBe(now); // 作成時間は変わらない
+    });
+    
+    it('should delete a task', async () => {
+      // タスクを作成
+      const now = Date.now();
+      const id = crypto.randomUUID();
+      const task: Task = {
+        id,
+        title: 'Task to Delete',
+        status: 'pending',
+        createdAt: now,
+        updatedAt: now,
+      };
+      
+      await db.tasks.add(task);
+      
+      // 作成されたことを確認
+      let savedTask = await db.tasks.get(id);
+      expect(savedTask).not.toBeUndefined();
+      
+      // タスクを削除
+      await db.tasks.delete(id);
+      
+      // 削除されたことを確認
+      savedTask = await db.tasks.get(id);
+      expect(savedTask).toBeUndefined();
     });
 
     it('should handle archived status', async () => {
@@ -170,6 +228,145 @@ describe('TodoDB', () => {
 
       const notifyTime = await db.settings.get('notifyBeforeMin');
       expect(notifyTime?.value).toBe(15);
+    });
+    
+    it('should update existing settings', async () => {
+      // 設定を保存
+      await db.settings.put({ key: 'theme', value: 'light' });
+      
+      // 同じキーで別の値を保存（更新）
+      await db.settings.put({ key: 'theme', value: 'dark' });
+      
+      // 更新された値が取得できることを確認
+      const theme = await db.settings.get('theme');
+      expect(theme?.value).toBe('dark');
+    });
+    
+    it('should delete settings', async () => {
+      // 設定を保存
+      await db.settings.put({ key: 'tempSetting', value: 'temporary' });
+      
+      // 存在することを確認
+      let setting = await db.settings.get('tempSetting');
+      expect(setting?.value).toBe('temporary');
+      
+      // 設定を削除
+      await db.settings.delete('tempSetting');
+      
+      // 削除されたことを確認
+      setting = await db.settings.get('tempSetting');
+      expect(setting).toBeUndefined();
+    });
+  });
+  
+  describe('Error Handling', () => {
+    it('should handle invalid table access gracefully', async () => {
+      // @ts-ignore - 意図的に型エラーを無視してテスト
+      const invalidTable = db.nonExistentTable;
+      expect(invalidTable).toBeUndefined();
+    });
+    
+    it('should throw error when accessing closed database', async () => {
+      await db.close();
+      
+      // 閉じたDBへのアクセスでエラーが発生することを確認
+      await expect(db.tasks.toArray()).rejects.toThrow();
+      
+      // テスト後はDBを再オープン
+      await db.open();
+    });
+    
+    it('should handle duplicate key errors', async () => {
+      const now = Date.now();
+      const id = crypto.randomUUID();
+      const task: Task = {
+        id,
+        title: 'Duplicate Task',
+        status: 'pending',
+        createdAt: now,
+        updatedAt: now,
+      };
+      
+      // 最初のタスク追加は成功するはず
+      await db.tasks.add(task);
+      
+      // 同じIDで再度追加するとエラーになるはず
+      await expect(db.tasks.add(task)).rejects.toThrow();
+    });
+  });
+  
+  describe('Task Recurrence', () => {
+    it('should support recurrence rule field', async () => {
+      const now = Date.now();
+      const id = crypto.randomUUID();
+      const task: Task = {
+        id,
+        title: 'Recurring Task',
+        status: 'pending',
+        repeatRule: 'FREQ=DAILY;INTERVAL=1',
+        repeatCount: 0,
+        repeatUntil: now + 7 * 24 * 60 * 60 * 1000, // 1週間後
+        createdAt: now,
+        updatedAt: now,
+      };
+      
+      await db.tasks.add(task);
+      
+      const savedTask = await db.tasks.get(id);
+      expect(savedTask?.repeatRule).toBe('FREQ=DAILY;INTERVAL=1');
+    });
+    
+    it('should query tasks by parentId', async () => {
+      const now = Date.now();
+      const parentId = crypto.randomUUID();
+      
+      // 親タスク
+      await db.tasks.add({
+        id: parentId,
+        title: 'Parent Task',
+        status: 'pending',
+        repeatRule: 'FREQ=DAILY;INTERVAL=1',
+        createdAt: now,
+        updatedAt: now,
+      });
+      
+      // 子タスク（繰り返し）
+      await db.tasks.bulkAdd([
+        {
+          id: crypto.randomUUID(),
+          title: 'Child Task 1',
+          status: 'pending',
+          repeatParentId: parentId,
+          repeatCount: 1,
+          createdAt: now + 1000,
+          updatedAt: now + 1000,
+        },
+        {
+          id: crypto.randomUUID(),
+          title: 'Child Task 2',
+          status: 'pending',
+          repeatParentId: parentId,
+          repeatCount: 2,
+          createdAt: now + 2000,
+          updatedAt: now + 2000,
+        }
+      ]);
+      
+      // 親IDで検索
+      const childTasks = await db.tasks
+        .where('repeatParentId')
+        .equals(parentId)
+        .toArray();
+      
+      expect(childTasks).toHaveLength(2);
+      
+      // repeatCountでソートして比較
+      const sortedTasks = [...childTasks].sort((a, b) => 
+        (a.repeatCount || 0) - (b.repeatCount || 0)
+      );
+      
+      expect(sortedTasks[0].repeatCount).toBe(1);
+      expect(sortedTasks[1].repeatCount).toBe(2);
     });
   });
 });
